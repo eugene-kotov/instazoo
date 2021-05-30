@@ -1,8 +1,12 @@
 package ru.eugene.instazoo.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import ru.eugene.instazoo.entity.enums.ERole;
 
 import javax.persistence.*;
@@ -11,7 +15,10 @@ import java.util.*;
 
 @Data
 @Entity
-public class User {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +38,7 @@ public class User {
 
     @ElementCollection(targetClass = ERole.class)
     @CollectionTable(name = "user_role", joinColumns = @JoinColumn(name ="user_id"))
-    private Set<ERole> role = new HashSet<>();
+    private Set<ERole> roles = new HashSet<>();
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "user", orphanRemoval = true)
     private List<Post> posts = new ArrayList<>();
@@ -43,11 +50,47 @@ public class User {
     @Transient
     private Collection<? extends GrantedAuthority> authorities;
 
-    public User() {
+    public User(Long id,
+                String username,
+                String password,
+                String email,
+                Collection<? extends GrantedAuthority> authorities) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.authorities = authorities;
     }
 
     @PrePersist
     protected void onCreate() {
         this.createdDate = LocalDateTime.now();
+    }
+
+    //SECURITY
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }
